@@ -1,106 +1,105 @@
 import { useState } from "react";
+import { useToggle } from "@uidotdev/usehooks";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { getTodos, addTodo, updateTodo, deleteTodo } from "../../api/todoApi";
 
 const TodoList = () => {
   const [newTodo, setNewTodo] = useState("");
+  // const [enabled, toggleEnabled] = useToggle(false);
 
   const queryClient = useQueryClient();
 
-  const { isLoading, isError, error, data: todos } = useQuery(
-    "todos",
+  // Get Resources from the server
+  const {
+    isLoading,
+    isError,
+    error,
+    data: todos,
+    refetch,
+    isFetching
+  } = useQuery(
+    "todos", // The key
     getTodos,
     {
-      select: data => data.sort((a, b) => b.id - a.id)
+      select: data => data.sort((a, b) => b.id - a.id),
+      refetchOnWindowFocus: false
+      //staleTime: 60_000
+      //enabled: false, // bloque le fetch des donnees
+      //enabled // bloque and unblok le fetch des donnees
     }
   );
 
-  const addTodoMutation = useMutation(addTodo, {
-    onSuccess: () => {
-      // Invalidate the cache and refresh
-      queryClient.invalidateQueries("todos");
-    }
-  });
-
+  // Update Ressources on the server
   const updateTodoMutation = useMutation(updateTodo, {
     onSuccess: () => {
-      // Invalidate the cache and refresh
       queryClient.invalidateQueries("todos");
+    },
+    onError: error => {
+      console.error(error);
     }
   });
 
-  const deleteTodoMutation = useMutation(deleteTodo, {
+  // Add Ressources on the server
+  const addTodoMutation = useMutation(addTodo, {
     onSuccess: () => {
-      // Invalidate the cache and refresh
       queryClient.invalidateQueries("todos");
+    },
+    onError: error => {
+      console.error(error);
     }
   });
 
-  const handleSubmit = e => {
-    e.preventDefault();
-
+  const handleClick = () => {
     addTodoMutation.mutate({
-      userId: 1,
+      userId: 256,
+      id: "430",
       title: newTodo,
       completed: false
     });
-
     setNewTodo("");
   };
 
-  const newItemSection = (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="new-todo">Enter a new Todo</label>
-      <div className="new-todo">
-        <input
-          type="text"
-          id="new-todo"
-          value={newTodo}
-          onChange={e => setNewTodo(e.target.value)}
-          placeholder="Enter new Todo"
-        />
-      </div>
-      <button className="submit">Click here !</button>
-    </form>
-  );
-
-  let content;
-  if (isLoading) {
-    content = <p>...Loading</p>;
-  } else if (isError) {
-    content = <p>{error.message}</p>;
-  } else {
-    content = todos.map(todo => {
-      return (
-        <article key={todo.id}>
-          <div className="todo">
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              id={todo.id}
-              onChange={() =>
-                updateTodoMutation.mutate({
-                  ...todo,
-                  completed: !todo.completed
-                })
-              }
-            />
-            <label htmlFor={todo.id}>{todo.title}</label>
-          </div>
-
-          <button onClick={() => deleteTodoMutation.mutate({ id: todo.id })}>
-            Delete !
-          </button>
-        </article>
-      );
-    });
-  }
+  // Delete Ressources on the server
+  const deleteTodoMutation = useMutation(deleteTodo, {
+    onSuccess: () => {
+      queryClient.invalidateQueries("todos");
+    },
+    onError: error => {
+      console.error(error);
+    }
+  });
 
   return (
     <div>
       <h1>Todo List</h1>
-      {newItemSection}
-      {content}
+      {/*<button onClick={() => refetch()}>Refesh Data</button>*/}
+      {/*{isFetching && <div>Fetching...</div>}*/}
+      {/*<button onClick={toggleEnabled}>Refesh Data</button>*/}
+      <input
+        type="text"
+        value={newTodo}
+        onChange={e => setNewTodo(e.target.value)}
+      />
+      <button onClick={handleClick}>Add new Todo</button>
+
+      {todos?.map(todo => (
+        <div key={todo.id}>
+          <p>{todo.title}</p>
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            onChange={() => {
+              updateTodoMutation.mutate({
+                ...todo,
+                completed: !todo.completed
+              });
+            }}
+          />
+          <button onClick={() => deleteTodoMutation.mutate(todo)}>
+            Delete !
+          </button>
+        </div>
+      ))}
     </div>
   );
 };

@@ -9,12 +9,12 @@ export const getTodos = async () => {
   return response.data;
 };
 
-export const addTodo = async todo => {
-  return await todoApi.post("/todos", todo);
-};
-
 export const updateTodo = async todo => {
   return await todoApi.patch(`/todos/${todo.id}`, todo);
+};
+
+export const addTodo = async todo => {
+  return await todoApi.post("/todos", todo);
 };
 
 export const deleteTodo = async ({ id }) => {
